@@ -1,0 +1,10 @@
+CC=gcc
+CFLAGS=-Wall -lpigpio -lrt -lpthread
+
+all: led_blink
+
+led_blink: main.c
+	$(CC) main.c -o led_blink $(CFLAGS)
+
+clean:
+	rm -f led_blink
