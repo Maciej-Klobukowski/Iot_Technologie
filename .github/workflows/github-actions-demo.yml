@@ -1,23 +1,62 @@
 name: Raspberry Pi SSH Demo
-
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
 
 jobs:
-  ssh-into-pi:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    runs-on: self-hosted   # Raspberry Pi self-hosted runner
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v5
+      ##################################################
+      # 1. Checkout source code
+      ##################################################
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Connect to Raspberry Pi via SSH (password auth)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.PI_HOST }}
-          username: ${{ secrets.PI_USER }}
-          password: ${{ secrets.PI_PASSWORD }}
-          port: 22
-          script: |
-            echo "Connected to Raspberry Pi!"
-            uname -a
-            ls -al
+
+      ##################################################
+      # 2. Enable cross-platform Docker building
+      ##################################################
+      - name: Enable QEMU (ARM virtualization)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Enable Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+
+      ##################################################
+      # 3. Build the Docker image for Raspberry Pi (ARM64)
+      ##################################################
+      - name: Build ARM64 Docker image for Bramj
+        run: |
+          docker build \
+            --platform linux/arm64 \
+            -t Raisberry_builder \
+            .
+
+
+      ##################################################
+      # 4. Compile Bramj inside the build container
+      ##################################################
+      - name: Compile Raisberry inside Docker container
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/work \
+            Raisberry_builder \
+            bash -c "
+              cd /work
+              echo 'Starting compilation'
+
+              # Compile pigpio sources
+              gcc -c pigpio/*.c -I/usr/include/pigpio
+
+              # Create static library
+              ar rcs libpigpio.a *.o
+
+              # Build the final executable
+              gcc main.c -L. -lpigpio -lpthread -o main
+
+              echo ' Compilation complete '
+            "
