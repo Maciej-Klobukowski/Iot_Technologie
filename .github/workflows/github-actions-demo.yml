@@ -12,7 +12,7 @@ jobs:
       ##################################################
       # 1. Checkout source code
       ##################################################
-      - name: Checkout repository
+      - name: Checkout srepository
         uses: actions/checkout@v4
 
 
@@ -38,7 +38,7 @@ jobs:
 
 
       ##################################################
-      # 4. Compile Bramj inside the build container
+      # 4. Compile Raisberry inside the build container
       ##################################################
       - name: Compile Raisberry inside Docker container
         run: |
